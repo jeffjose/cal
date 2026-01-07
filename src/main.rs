@@ -52,7 +52,6 @@ fn print_repo_info(repo: &Repository) {
     println!("{}", "─".repeat(40).dimmed());
     println!("  {}  {}", "Branch:".white().bold(), branch.yellow());
     println!("  {}  {}", "Commits:".white().bold(), commit_count.to_string().green());
-    println!("  {}  {}", "LOC:".white().bold(), format_number(code_stats.lines_of_code).magenta());
     println!("  {}  {}", "Size:".white().bold(), format_size(size));
 
     if !contributors.is_empty() {
@@ -65,12 +64,10 @@ fn print_repo_info(repo: &Repository) {
     }
 
     if !code_stats.languages.is_empty() {
-        let top_langs: Vec<_> = code_stats.languages.iter().take(5).collect();
-        println!("  {}  {}", "Languages:".white().bold(),
-            top_langs.iter()
-                .map(|(lang, _)| lang.as_str())
-                .collect::<Vec<_>>()
-                .join(", "));
+        println!("  {}  {} total", "LOC:".white().bold(), format_number(code_stats.total_lines).magenta());
+        for (lang, _files, lines) in code_stats.languages.iter().take(5) {
+            println!("        {} {}", format_number(*lines).cyan(), lang);
+        }
     }
 }
 
@@ -105,15 +102,14 @@ fn get_contributors(repo: &Repository) -> Vec<(String, usize)> {
 }
 
 struct CodeStats {
-    languages: Vec<(String, usize)>,
-    lines_of_code: usize,
+    languages: Vec<(String, usize, usize)>, // (name, file_count, lines)
+    total_lines: usize,
 }
 
 fn detect_languages_and_loc(path: &Path) -> CodeStats {
-    let mut langs: HashMap<String, usize> = HashMap::new();
-    let mut total_lines: usize = 0;
+    let mut langs: HashMap<String, (usize, usize)> = HashMap::new(); // (files, lines)
 
-    fn walk_dir(path: &Path, langs: &mut HashMap<String, usize>, total_lines: &mut usize) {
+    fn walk_dir(path: &Path, langs: &mut HashMap<String, (usize, usize)>) {
         let Ok(entries) = std::fs::read_dir(path) else { return };
 
         for entry in entries.filter_map(Result::ok) {
@@ -126,7 +122,7 @@ fn detect_languages_and_loc(path: &Path) -> CodeStats {
             }
 
             if path.is_dir() {
-                walk_dir(&path, langs, total_lines);
+                walk_dir(&path, langs);
             } else if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
                 let lang = match ext {
                     "rs" => "Rust",
@@ -159,24 +155,31 @@ fn detect_languages_and_loc(path: &Path) -> CodeStats {
                     "html" => "HTML",
                     _ => continue,
                 };
-                *langs.entry(lang.to_string()).or_insert(0) += 1;
 
-                // Count lines of code
-                if let Ok(content) = std::fs::read_to_string(&path) {
-                    *total_lines += content.lines().count();
-                }
+                let lines = std::fs::read_to_string(&path)
+                    .map(|c| c.lines().count())
+                    .unwrap_or(0);
+
+                let entry = langs.entry(lang.to_string()).or_insert((0, 0));
+                entry.0 += 1;
+                entry.1 += lines;
             }
         }
     }
 
-    walk_dir(path, &mut langs, &mut total_lines);
+    walk_dir(path, &mut langs);
 
-    let mut sorted: Vec<_> = langs.into_iter().collect();
-    sorted.sort_by(|a, b| b.1.cmp(&a.1));
+    let total_lines: usize = langs.values().map(|(_, lines)| lines).sum();
+
+    let mut sorted: Vec<_> = langs
+        .into_iter()
+        .map(|(name, (files, lines))| (name, files, lines))
+        .collect();
+    sorted.sort_by(|a, b| b.2.cmp(&a.2)); // Sort by lines
 
     CodeStats {
         languages: sorted,
-        lines_of_code: total_lines,
+        total_lines,
     }
 }
 
@@ -309,11 +312,11 @@ fn print_contribution_calendar(repo: &Repository) {
     // Print legend
     println!();
     print!("     Less ");
-    print!("{} ", "▪".truecolor(40, 40, 40));
-    print!("{} ", "▪".truecolor(100, 149, 237));
-    print!("{} ", "▪".truecolor(0, 206, 209));
-    print!("{} ", "▪".truecolor(255, 215, 0));
-    print!("{} ", "▪".truecolor(50, 205, 50));
+    print!("{} ", "█".truecolor(40, 40, 40));
+    print!("{} ", "█".truecolor(100, 149, 237));
+    print!("{} ", "█".truecolor(0, 206, 209));
+    print!("{} ", "█".truecolor(255, 215, 0));
+    print!("{} ", "█".truecolor(50, 205, 50));
     println!("More");
 
     // Print stats
@@ -327,17 +330,17 @@ fn print_contribution_calendar(repo: &Repository) {
 
 fn get_contribution_block(count: usize, max: usize) -> ColoredString {
     if count == 0 {
-        return "▪".truecolor(40, 40, 40);
+        return "█".truecolor(40, 40, 40);
     }
 
     let intensity = (count as f64 / max as f64 * 4.0).ceil() as usize;
 
     // Distinct colors: blue → cyan → yellow → green
     match intensity {
-        1 => "▪".truecolor(100, 149, 237),  // cornflower blue
-        2 => "▪".truecolor(0, 206, 209),    // dark turquoise
-        3 => "▪".truecolor(255, 215, 0),    // gold
-        _ => "▪".truecolor(50, 205, 50),    // lime green
+        1 => "█".truecolor(100, 149, 237),  // cornflower blue
+        2 => "█".truecolor(0, 206, 209),    // dark turquoise
+        3 => "█".truecolor(255, 215, 0),    // gold
+        _ => "█".truecolor(50, 205, 50),    // lime green
     }
 }
 
