@@ -64,10 +64,12 @@ fn print_repo_info(repo: &Repository) {
     }
 
     if !code_stats.languages.is_empty() {
-        println!("  {}  {} total", "LOC:".white().bold(), format_number(code_stats.total_lines).magenta());
-        for (lang, _files, lines) in code_stats.languages.iter().take(5) {
-            println!("        {} {}", format_number(*lines).cyan(), lang);
-        }
+        let langs_str = code_stats.languages.iter()
+            .take(5)
+            .map(|(lang, _, lines)| format!("{} ({})", lang, format_number(*lines)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        println!("  {}  {}", "LOC:".white().bold(), langs_str);
     }
 }
 
@@ -103,7 +105,6 @@ fn get_contributors(repo: &Repository) -> Vec<(String, usize)> {
 
 struct CodeStats {
     languages: Vec<(String, usize, usize)>, // (name, file_count, lines)
-    total_lines: usize,
 }
 
 fn detect_languages_and_loc(path: &Path) -> CodeStats {
@@ -169,18 +170,13 @@ fn detect_languages_and_loc(path: &Path) -> CodeStats {
 
     walk_dir(path, &mut langs);
 
-    let total_lines: usize = langs.values().map(|(_, lines)| lines).sum();
-
     let mut sorted: Vec<_> = langs
         .into_iter()
         .map(|(name, (files, lines))| (name, files, lines))
         .collect();
     sorted.sort_by(|a, b| b.2.cmp(&a.2)); // Sort by lines
 
-    CodeStats {
-        languages: sorted,
-        total_lines,
-    }
+    CodeStats { languages: sorted }
 }
 
 fn get_repo_size(path: &Path) -> u64 {
