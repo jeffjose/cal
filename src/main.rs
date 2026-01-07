@@ -347,10 +347,10 @@ fn print_contribution_calendar(repo: &Repository) {
     println!();
     print!("     Less ");
     print!("{} ", "█".truecolor(40, 40, 40));
-    print!("{} ", "█".truecolor(100, 149, 237));
-    print!("{} ", "█".truecolor(0, 206, 209));
-    print!("{} ", "█".truecolor(255, 215, 0));
-    print!("{} ", "█".truecolor(50, 205, 50));
+    print!("{} ", "█".truecolor(255, 140, 0));
+    print!("{} ", "█".truecolor(255, 200, 0));
+    print!("{} ", "█".truecolor(180, 230, 30));
+    print!("{} ", "█".truecolor(34, 197, 94));
     println!("More");
 
     // Print stats
@@ -369,12 +369,12 @@ fn get_contribution_block(count: usize, max: usize) -> ColoredString {
 
     let intensity = (count as f64 / max as f64 * 4.0).ceil() as usize;
 
-    // Distinct colors: blue → cyan → yellow → green
+    // Gradient: orange → yellow → lime → green
     match intensity {
-        1 => "█".truecolor(100, 149, 237),  // cornflower blue
-        2 => "█".truecolor(0, 206, 209),    // dark turquoise
-        3 => "█".truecolor(255, 215, 0),    // gold
-        _ => "█".truecolor(50, 205, 50),    // lime green
+        1 => "█".truecolor(255, 140, 0),    // dark orange
+        2 => "█".truecolor(255, 200, 0),    // golden yellow
+        3 => "█".truecolor(180, 230, 30),   // yellow-green
+        _ => "█".truecolor(34, 197, 94),    // green
     }
 }
 
