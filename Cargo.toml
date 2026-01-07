@@ -1,6 +1,16 @@
 [package]
 name = "cal"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+description = "Git contribution calendar in your terminal"
+license = "MIT"
 
 [dependencies]
+git2 = "0.19"
+chrono = "0.4"
+colored = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
