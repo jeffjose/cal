@@ -388,11 +388,11 @@ fn print_contribution_calendar(repo: &Repository) {
     // Print legend
     println!();
     print!("     Less ");
-    print!("{} ", "█".truecolor(40, 40, 40));
-    print!("{} ", "█".truecolor(250, 204, 21));
-    print!("{} ", "█".truecolor(251, 146, 60));
-    print!("{} ", "█".truecolor(134, 239, 172));
-    print!("{} ", "█".truecolor(34, 197, 94));
+    print!("{} ", "█".bright_black());
+    print!("{} ", "█".yellow());
+    print!("{} ", "█".bright_yellow());
+    print!("{} ", "█".bright_green());
+    print!("{} ", "█".green());
     println!("More");
 
     // Print stats
@@ -406,17 +406,17 @@ fn print_contribution_calendar(repo: &Repository) {
 
 fn get_contribution_block(count: usize, max: usize) -> ColoredString {
     if count == 0 {
-        return "█".truecolor(40, 40, 40);
+        return "█".bright_black();
     }
 
     let intensity = (count as f64 / max as f64 * 4.0).ceil() as usize;
 
-    // Gradient: yellow → orange → light green → green
+    // Gradient: yellow → orange → bright green → green
     match intensity {
-        1 => "█".truecolor(250, 204, 21),   // yellow
-        2 => "█".truecolor(251, 146, 60),   // orange
-        3 => "█".truecolor(134, 239, 172),  // light green
-        _ => "█".truecolor(34, 197, 94),    // green
+        1 => "█".yellow(),
+        2 => "█".bright_yellow(),
+        3 => "█".bright_green(),
+        _ => "█".green(),
     }
 }
 
