@@ -6,6 +6,7 @@ use std::env;
 use std::path::Path;
 
 fn main() {
+    colored::control::set_override(true);
     let path = env::args().nth(1).unwrap_or_else(|| ".".to_string());
 
     let repo = match Repository::discover(&path) {
@@ -268,12 +269,24 @@ fn format_number(n: usize) -> String {
 
 fn print_contribution_calendar(repo: &Repository) {
     let today = Local::now().date_naive();
-    let weeks = 52;
-    let start_date = today - Duration::days((weeks * 7) as i64);
+
+    // Start from 11 months ago (first day of that month) to show 12 months total
+    let months_back = 11;
+    let total_months = today.month() as i32 - months_back;
+    let (start_year, start_month) = if total_months <= 0 {
+        (today.year() - 1, (total_months + 12) as u32)
+    } else {
+        (today.year(), total_months as u32)
+    };
+    let month_start = NaiveDate::from_ymd_opt(start_year, start_month, 1).unwrap();
 
     // Adjust to start from Sunday
-    let days_since_sunday = start_date.weekday().num_days_from_sunday() as i64;
-    let start_date = start_date - Duration::days(days_since_sunday);
+    let days_since_sunday = month_start.weekday().num_days_from_sunday() as i64;
+    let start_date = month_start - Duration::days(days_since_sunday);
+
+    // Calculate weeks needed
+    let total_days = (today - start_date).num_days() + 1;
+    let weeks = ((total_days + 6) / 7) as usize;
 
     // Collect commits by date
     let mut commits_by_date: HashMap<NaiveDate, usize> = HashMap::new();
@@ -304,14 +317,14 @@ fn print_contribution_calendar(repo: &Repository) {
 
     // Print month labels
     print!("     ");
-    let mut current_month = None;
+    let mut current_month: Option<(i32, u32)> = None;
     for week in 0..weeks {
         let week_start = start_date + Duration::days((week * 7) as i64);
-        let month = week_start.month();
+        let year_month = (week_start.year(), week_start.month());
 
-        if current_month != Some(month) {
-            current_month = Some(month);
-            print!("{}", month_abbr(month));
+        if current_month != Some(year_month) {
+            current_month = Some(year_month);
+            print!("{}", month_abbr(year_month.1));
         } else {
             print!("  ");
         }
@@ -357,7 +370,7 @@ fn print_contribution_calendar(repo: &Repository) {
     let total_commits: usize = commits_by_date.values().sum();
     let active_days = commits_by_date.len();
     println!();
-    println!("     {} commits in the last year across {} days",
+    println!("     {} commits in the last 12 months across {} days",
         total_commits.to_string().green().bold(),
         active_days.to_string().cyan());
 }
