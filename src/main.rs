@@ -318,9 +318,18 @@ fn print_contribution_calendar(repo: &Repository) {
     // Print month labels
     print!("     ");
     let mut current_month: Option<(i32, u32)> = None;
+    let mut prev_year: Option<i32> = None;
     for week in 0..weeks {
         let week_start = start_date + Duration::days((week * 7) as i64);
         let year_month = (week_start.year(), week_start.month());
+
+        // Add separator at year boundary
+        if let Some(py) = prev_year {
+            if week_start.year() != py {
+                print!(" ");
+            }
+        }
+        prev_year = Some(week_start.year());
 
         if current_month != Some(year_month) {
             current_month = Some(year_month);
@@ -333,6 +342,7 @@ fn print_contribution_calendar(repo: &Repository) {
 
     // Print calendar grid
     let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    let mut prev_year_grid: Option<i32> = None;
 
     for (day_idx, day_name) in days.iter().enumerate() {
         if day_idx % 2 == 1 {
@@ -343,6 +353,25 @@ fn print_contribution_calendar(repo: &Repository) {
 
         for week in 0..weeks {
             let date = start_date + Duration::days((week * 7 + day_idx) as i64);
+
+            // Add separator at year boundary (only check on first row to track)
+            if day_idx == 0 {
+                if let Some(py) = prev_year_grid {
+                    if date.year() != py {
+                        // Year changed
+                    }
+                }
+                prev_year_grid = Some(date.year());
+            }
+
+            // Check for year boundary and add separator
+            let week_start = start_date + Duration::days((week * 7) as i64);
+            if week > 0 {
+                let prev_week_start = start_date + Duration::days(((week - 1) * 7) as i64);
+                if week_start.year() != prev_week_start.year() {
+                    print!(" ");
+                }
+            }
 
             if date > today {
                 print!("  ");
@@ -393,18 +422,18 @@ fn get_contribution_block(count: usize, max: usize) -> ColoredString {
 
 fn month_abbr(month: u32) -> &'static str {
     match month {
-        1 => "Jan",
-        2 => "Feb",
-        3 => "Mar",
-        4 => "Apr",
-        5 => "May",
-        6 => "Jun",
-        7 => "Jul",
-        8 => "Aug",
-        9 => "Sep",
-        10 => "Oct",
-        11 => "Nov",
-        12 => "Dec",
-        _ => "   ",
+        1 => "Ja",
+        2 => "Fe",
+        3 => "Mr",
+        4 => "Ap",
+        5 => "Ma",
+        6 => "Jn",
+        7 => "Jl",
+        8 => "Au",
+        9 => "Se",
+        10 => "Oc",
+        11 => "No",
+        12 => "De",
+        _ => "  ",
     }
 }
